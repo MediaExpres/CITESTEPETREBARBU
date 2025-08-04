@@ -5,7 +5,19 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 // ## 1. SCENE SETUP ##
 const scene = new THREE.Scene();
 const clock = new THREE.Clock();
-scene.background = new THREE.Color(0xadadad);
+
+// ## SKYBOX LOADER ##
+const cubeLoader = new THREE.CubeTextureLoader();
+cubeLoader.setPath('skybox/'); // Calea către folderul cu imaginile separate
+
+// Se încarcă cele 6 imagini .png (asigură-te că numele corespund)
+const skyboxTexture = cubeLoader.load([
+    'px.png', 'nx.png',
+    'py.png', 'ny.png',
+    'pz.png', 'nz.png'
+]);
+
+scene.background = skyboxTexture;
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
