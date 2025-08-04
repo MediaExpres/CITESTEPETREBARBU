@@ -474,7 +474,7 @@ welcomeContext.fillText('NOTA: priviți în jur cu mouse-ul, navigați cu tastel
 
 // Line 6
 welcomeContext.font = '45px Sans-serif';
-welcomeContext.fillText('Cu SPACEBAR săriți în sus de bucurie!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.58);
+welcomeContext.fillText('Cu SPACEBAR săriți în sus de bucurie, cu Esc reveniți pe mouse!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.58);
 
 
 // --- SLOGAN ---
