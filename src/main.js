@@ -6,16 +6,33 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 const scene = new THREE.Scene();
 const clock = new THREE.Clock();
 
-// ## SKYBOX LOADER ##
-const cubeLoader = new THREE.CubeTextureLoader();
-cubeLoader.setPath('skybox/'); // Calea către folderul cu imaginile separate
+// ## PHYSICAL SKYBOX MESH (replaces SKYBOX LOADER) ##
 
-// Se încarcă cele 6 imagini .png (asigură-te că numele corespund)
-const skyboxTexture = cubeLoader.load([
-    'px.png', 'nx.png',
-    'py.png', 'ny.png',
-    'pz.png', 'nz.png'
-]);
+// 1. Define the paths to the 6 images in the correct order for a cube's faces
+// (right, left, top, bottom, front, back)
+const skyboxImagePaths = [
+    'skybox/px.png', 'skybox/nx.png',
+    'skybox/py.png', 'skybox/ny.png',
+    'skybox/pz.png', 'skybox/nz.png'
+];
+
+// 2. Create an array of materials, one for each face, loading each texture
+const skyboxMaterials = skyboxImagePaths.map(image => {
+    return new THREE.MeshBasicMaterial({
+        map: new THREE.TextureLoader().load(image),
+        side: THREE.BackSide // Crucial: render the *inside* of the cube
+    });
+});
+
+// 3. Create a very large cube geometry
+// This size should be large enough to contain your entire scene comfortably
+const skyboxGeometry = new THREE.BoxGeometry(950, 950, 950);
+
+// 4. Create a single mesh using the geometry and the array of 6 materials
+const skyboxMesh = new THREE.Mesh(skyboxGeometry, skyboxMaterials);
+
+// 5. Add the physical skybox cube to the scene
+scene.add(skyboxMesh);
 
 scene.background = skyboxTexture;
 
