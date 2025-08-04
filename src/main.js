@@ -469,22 +469,22 @@ welcomeContext.fillText('petrecenume@gmail.com', welcomeCanvas.width / 2, welcom
 
 // --- NEW INSTRUCTIONAL TEXT ADDED HERE ---
 // Line 5
-welcomeContext.font = '35px Sans-serif';
+welcomeContext.font = '45px Sans-serif';
 welcomeContext.fillText('NOTA: priviți în jur cu mouse-ul, navigați cu tastele W, A, S, D.', welcomeCanvas.width / 2, welcomeCanvas.height * 0.50);
 
 // Line 6
-welcomeContext.font = '35px Sans-serif';
+welcomeContext.font = '45px Sans-serif';
 welcomeContext.fillText('Cu SPACEBAR săriți în sus de bucurie!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.58);
 
 
 // --- SLOGAN ---
 // Line 7
 welcomeContext.font = 'bold 45px Sans-serif';
-welcomeContext.fillText('TRĂIASCĂ LITERATURA! TRĂIASCĂ POPORUL!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.72);
+welcomeContext.fillText('TRĂIASCĂ POPORUL ȘI LITERATURA', welcomeCanvas.width / 2, welcomeCanvas.height * 0.72);
 
 // Line 8
-welcomeContext.font = 'bold 45px Sans-serif';
-welcomeContext.fillText('ÎN FRUNTE CU SCRIITORUL LUI IUBIT!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.82);
+welcomeContext.font = 'bold 55px Sans-serif';
+welcomeContext.fillText('ÎN FRUNTE CU SCRIITORUL SĂU IUBIT, PETRE BARBU!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.82);
 
 
 // 4. Create material from canvas
