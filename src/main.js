@@ -1,7 +1,7 @@
 import './style.css';
 import * as THREE from 'three';
 // Se importa AMBELE tipuri de controale
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js'; 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // #############################################
@@ -52,19 +52,22 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 // ## 2. AUDIO, CONTROLS, LIGHTING & RESPONSIVENESS ##
 // #############################################
 
-// =================== MODIFICARE: SETUP AUDIO ===================
+// =================== ADAUGARE: SETUP AUDIO ===================
 const listener = new THREE.AudioListener();
-camera.add(listener);
+camera.add(listener); // Atașăm "urechea" de cameră
 const sound = new THREE.Audio(listener);
 const audioLoader = new THREE.AudioLoader();
+
+// Încarcă fișierul audio
 audioLoader.load('muzica.mp3', function(buffer) { // Asigură-te că ai un fișier 'muzica.mp3'
     sound.setBuffer(buffer);
     sound.setLoop(true);
     sound.setVolume(0.5);
 });
+
 // Variabilă pentru a porni sunetul doar după o interacțiune
 let audioStarted = false;
-// =================== SFÂRȘIT MODIFICARE AUDIO ===================
+// =================== SFÂRȘIT ADAUGARE AUDIO ===================
 
 let controls;
 let keysPressed = {
@@ -113,13 +116,14 @@ if (isMobile) {
 
     controls.addEventListener('lock', () => {
         instructions.style.display = 'none';
-        // =================== MODIFICARE: PORNIRE AUDIO ===================
-        // Pornim contextul audio la prima interacțiune
+        
+        // =================== ADAUGARE: ACTIVARE AUDIO LA CLICK ===================
+        // Pornim contextul audio la prima interacțiune, dacă e suspendat
         if (!audioStarted && listener.context.state === 'suspended') {
             listener.context.resume();
         }
         audioStarted = true;
-        // =================== SFÂRȘIT MODIFICARE AUDIO ===================
+        // =================== SFÂRȘIT ADAUGARE ===================
     });
 
     controls.addEventListener('unlock', () => {
@@ -139,7 +143,7 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ## 4. BUILDING COMPONENTS & ZONES ##
+// ## 4. BUILDING COMPONENTS ##
 const groundGeometry = new THREE.PlaneGeometry(200, 200);
 const ground = new THREE.Mesh(groundGeometry, concreteMaterial);
 ground.rotation.x = -Math.PI / 2;
@@ -366,7 +370,6 @@ welcomeContext.font = 'bold 45px Sans-serif';
 welcomeContext.fillText('ÎN FRUNTE CU SCRIITORUL LUI IUBIT!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.82);
 
 const welcomeTexture = new THREE.CanvasTexture(welcomeCanvas);
-
 const welcomeMaterial = new THREE.MeshStandardMaterial({
     map: welcomeTexture,
 });
@@ -446,38 +449,25 @@ rightBar.castShadow = true;
 welcomePanelGroup.add(rightBar);
 welcomePanelGroup.position.set(29, 5, 33);
 scene.add(welcomePanelGroup);
-
-// ## 5. COLLISION & PHYSICS SETUP ##
-
 const playerCollider = new THREE.Box3();
-const playerSize = new THREE.Vector3(1, 5, 1); // Lățime, înălțime, adâncime jucător
-const playerVelocity = new THREE.Vector3();
-const jumpHeight = 20;
-const gravity = -20;
-
-// =================== MODIFICARE: COLLIDERS ===================
-// Creăm cutiile de coliziune PENTRU TOATE OBSTACOLELE
+const playerSize = new THREE.Vector3(1, 5, 1);
 const leftWallCollider = new THREE.Box3().setFromObject(leftWall);
 const rightWallCollider = new THREE.Box3().setFromObject(rightWall);
-const welcomePanelCollider = new THREE.Box3().setFromObject(welcomePanelGroup);
-
-// O listă cu toate obstacolele din scenă
-const colliders = [leftWallCollider, rightWallCollider, welcomePanelCollider];
-// =================== SFÂRȘIT MODIFICARE COLLIDERS ===================
-
-// =================== MODIFICARE: ZONA MUZICALĂ ===================
-// Definim o cutie invizibilă care reprezintă interiorul clădirii
+// =================== ADAUGARE: ZONA MUZICALĂ ===================
 const musicZone = new THREE.Box3(
     new THREE.Vector3(-slabWidth / 2, -10, -wallDepth / 2),
     new THREE.Vector3(slabWidth / 2, 50, wallDepth / 2)
 );
-let isPlayerInMusicZone = false; // Starea curentă
-// =================== SFÂRȘIT MODIFICARE ZONA MUZICALĂ ===================
-
+let isPlayerInMusicZone = false;
+// =================== SFÂRȘIT ADAUGARE ===================
 
 renderer.compile(scene, camera);
+const playerVelocity = new THREE.Vector3();
+const jumpHeight = 20;
+const gravity = -20;
 
-// ## 6. ANIMATION LOOP ##
+
+// ## 5. ANIMATION LOOP ##
 function animate() {
     requestAnimationFrame(animate);
 
@@ -487,11 +477,8 @@ function animate() {
         const deltaTime = clock.getDelta();
 
         if (controls && controls.isLocked === true) {
-            // Logica de frecare / încetinire
             playerVelocity.x -= playerVelocity.x * 10.0 * deltaTime;
             playerVelocity.z -= playerVelocity.z * 10.0 * deltaTime;
-
-            // Aplicăm gravitația
             playerVelocity.y += gravity * deltaTime;
 
             const direction = new THREE.Vector3();
@@ -505,58 +492,51 @@ function animate() {
                 playerVelocity.z += direction.z * speed * deltaTime;
             }
 
-            // =================== MODIFICARE: LOGICA DE COLIZIUNE EXTINSĂ ===================
-            // Stocăm poziția veche înainte de a o modifica
-            const oldPosition = controls.object.position.clone();
-
-            // Aplicăm viteza pe fiecare axă separat pentru a gestiona coliziunile mai ușor
-            controls.object.position.x -= playerVelocity.x * deltaTime;
-            controls.object.position.z -= playerVelocity.z * deltaTime;
-
-            // Actualizăm cutia de coliziune a jucătorului cu noua poziție potențială
-            playerCollider.setFromCenterAndSize(controls.object.position, playerSize);
-
-            // Verificăm coliziunea cu FIECARE obstacol
-            for (const collider of colliders) {
-                if (playerCollider.intersectsBox(collider)) {
-                    // Dacă există o coliziune, revenim la poziția veche pe axa respectivă
-                    controls.object.position.copy(oldPosition);
-                    // Oprim viteza pe acea axă pentru a preveni "lipirea" de perete
-                    playerVelocity.x = 0;
-                    playerVelocity.z = 0;
-                    // Ieșim din buclă, deoarece o coliziune este suficientă
-                    break; 
-                }
-            }
-             // =================== SFÂRȘIT MODIFICARE LOGICA DE COLIZIUNE ===================
-
-
+            // Aplicăm mișcarea pe orizontală
+            controls.moveRight(-playerVelocity.x * deltaTime);
+            controls.moveForward(-playerVelocity.z * deltaTime);
+            
             // Aplicăm mișcarea pe verticală (săritura)
             controls.object.position.y += playerVelocity.y * deltaTime;
 
-            // Coliziunea cu solul
-            if (controls.object.position.y < 5) {
+            const playerPos = controls.object.position;
+            playerCollider.setFromCenterAndSize(playerPos, playerSize);
+
+            // Verificăm coliziunile cu pereții laterali
+            const colliders = [leftWallCollider, rightWallCollider];
+            for (const collider of colliders) {
+                if (playerCollider.intersectsBox(collider)) {
+                    // Logica simplă de resetare a poziției pe axa X în caz de coliziune
+                    // Oprește mișcarea pe X pentru a nu rămâne blocat
+                    playerPos.x -= -playerVelocity.x * deltaTime; // Anulează mișcarea pe X
+                    playerVelocity.x = 0;
+                }
+            }
+            
+            // Verificăm coliziunea cu solul
+            if (playerPos.y < 5) {
                 playerVelocity.y = 0;
-                controls.object.position.y = 5;
+                playerPos.y = 5;
                 if (keysPressed['Space']) {
                     playerVelocity.y = jumpHeight;
                 }
             }
-
-             // =================== MODIFICARE: LOGICA MUZICII ===================
+            
+            // =================== ADAUGARE: LOGICA MUZICII ===================
             const isInside = musicZone.containsPoint(controls.object.position);
 
             if (isInside && !isPlayerInMusicZone) {
                 // Jucătorul a intrat în zonă
-                if (sound.isPaused) sound.play(); // Repornește dacă era pe pauză
-                else if (!sound.isPlaying) sound.play(); // Pornește dacă era oprit
+                if (audioStarted && !sound.isPlaying) {
+                     sound.play();
+                }
                 isPlayerInMusicZone = true;
             } else if (!isInside && isPlayerInMusicZone) {
                 // Jucătorul a ieșit din zonă
-                sound.pause(); // Punem muzica pe pauză, nu pe stop, ca să reia de unde a rămas
+                sound.pause();
                 isPlayerInMusicZone = false;
             }
-            // =================== SFÂRȘIT MODIFICARE LOGICA MUZICII ===================
+            // =================== SFÂRȘIT ADAUGARE ===================
         }
     }
     
