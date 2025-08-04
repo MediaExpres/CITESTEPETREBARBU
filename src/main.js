@@ -52,22 +52,24 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 // ## 2. AUDIO, CONTROLS, LIGHTING & RESPONSIVENESS ##
 // #############################################
 
-// =================== ADAUGARE: SETUP AUDIO ===================
+// =================== MODIFICARE: SETUP AUDIO PENTRU VOLUM GRADUAL ===================
 const listener = new THREE.AudioListener();
 camera.add(listener); // Atașăm "urechea" de cameră
 const sound = new THREE.Audio(listener);
 const audioLoader = new THREE.AudioLoader();
 
+// Definim constantele pentru volum și distanța de fade
+const MIN_VOLUME = 0.1; // Volumul minim, auzit de la distanță
+const MAX_VOLUME = 1.0; // Volumul maxim, în interiorul clădirii
+const FADE_DISTANCE = 25.0; // Distanța pe care se face tranziția de volum
+
 // Încarcă fișierul audio
 audioLoader.load('muzica.mp3', function(buffer) { // Asigură-te că ai un fișier 'muzica.mp3'
     sound.setBuffer(buffer);
     sound.setLoop(true);
-    sound.setVolume(0.5);
+    sound.setVolume(MIN_VOLUME); // Inițial, sunetul este setat la volumul minim
 });
-
-// Variabilă pentru a porni sunetul doar după o interacțiune
-let audioStarted = false;
-// =================== SFÂRȘIT ADAUGARE AUDIO ===================
+// =================== SFÂRȘIT MODIFICARE ===================
 
 let controls;
 let keysPressed = {
@@ -117,13 +119,15 @@ if (isMobile) {
     controls.addEventListener('lock', () => {
         instructions.style.display = 'none';
         
-        // =================== ADAUGARE: ACTIVARE AUDIO LA CLICK ===================
-        // Pornim contextul audio la prima interacțiune, dacă e suspendat
-        if (!audioStarted && listener.context.state === 'suspended') {
+        // =================== MODIFICARE: ACTIVARE AUDIO LA CLICK ===================
+        // Pornim contextul audio și redarea sunetului la primul click
+        if (listener.context.state === 'suspended') {
             listener.context.resume();
         }
-        audioStarted = true;
-        // =================== SFÂRȘIT ADAUGARE ===================
+        if (!sound.isPlaying) {
+            sound.play(); // Pornim sunetul, care are deja volumul setat la minim
+        }
+        // =================== SFÂRȘIT MODIFICARE ===================
     });
 
     controls.addEventListener('unlock', () => {
@@ -453,13 +457,13 @@ const playerCollider = new THREE.Box3();
 const playerSize = new THREE.Vector3(1, 5, 1);
 const leftWallCollider = new THREE.Box3().setFromObject(leftWall);
 const rightWallCollider = new THREE.Box3().setFromObject(rightWall);
-// =================== ADAUGARE: ZONA MUZICALĂ ===================
-const musicZone = new THREE.Box3(
+
+// =================== MODIFICARE: ZONA DE VOLUM MAXIM ===================
+const maxVolumeZone = new THREE.Box3(
     new THREE.Vector3(-slabWidth / 2, -10, -wallDepth / 2),
     new THREE.Vector3(slabWidth / 2, 50, wallDepth / 2)
 );
-let isPlayerInMusicZone = false;
-// =================== SFÂRȘIT ADAUGARE ===================
+// =================== SFÂRȘIT MODIFICARE ===================
 
 renderer.compile(scene, camera);
 const playerVelocity = new THREE.Vector3();
@@ -522,21 +526,26 @@ function animate() {
                 }
             }
             
-            // =================== ADAUGARE: LOGICA MUZICII ===================
-            const isInside = musicZone.containsPoint(controls.object.position);
-
-            if (isInside && !isPlayerInMusicZone) {
-                // Jucătorul a intrat în zonă
-                if (audioStarted && !sound.isPlaying) {
-                     sound.play();
+            // =================== MODIFICARE: LOGICA DE FADE AUDIO ===================
+            // Am eliminat vechea logică binară și am înlocuit-o cu cea nouă
+            if (sound.isPlaying) {
+                let volume = MIN_VOLUME;
+                
+                // Calculăm cea mai scurtă distanță de la jucător la "cutia" de volum maxim
+                const distanceToZone = maxVolumeZone.distanceToPoint(playerPos);
+                
+                if (distanceToZone < FADE_DISTANCE) {
+                    // Jucătorul este în zona de tranziție sau în interior
+                    // Calculăm progresul (0.0 la marginea zonei de fade, 1.0 la marginea zonei de volum maxim)
+                    const progress = 1.0 - (distanceToZone / FADE_DISTANCE);
+                    // Calculăm volumul prin interpolare liniară
+                    volume = MIN_VOLUME + progress * (MAX_VOLUME - MIN_VOLUME);
                 }
-                isPlayerInMusicZone = true;
-            } else if (!isInside && isPlayerInMusicZone) {
-                // Jucătorul a ieșit din zonă
-                sound.pause();
-                isPlayerInMusicZone = false;
+                
+                // Setăm volumul, asigurându-ne că nu depășește limitele
+                sound.setVolume(Math.max(MIN_VOLUME, Math.min(MAX_VOLUME, volume)));
             }
-            // =================== SFÂRȘIT ADAUGARE ===================
+            // =================== SFÂRȘIT MODIFICARE ===================
         }
     }
     
