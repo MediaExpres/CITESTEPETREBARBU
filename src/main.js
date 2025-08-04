@@ -34,8 +34,6 @@ const skyboxMesh = new THREE.Mesh(skyboxGeometry, skyboxMaterials);
 // 5. Add the physical skybox cube to the scene
 scene.add(skyboxMesh);
 
-scene.background = skyboxTexture;
-
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
 
@@ -88,7 +86,7 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-directionalLight.position.set(50, 50, 25);
+directionalLight.position.set(-50, 50, -25);
 directionalLight.castShadow = true;
 directionalLight.shadow.camera.top = 50;
 directionalLight.shadow.camera.bottom = -50;
