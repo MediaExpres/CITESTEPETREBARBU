@@ -1,7 +1,7 @@
 import './style.css';
 import * as THREE from 'three';
 // Se importa AMBELE tipuri de controale
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js'; 
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // #############################################
@@ -44,15 +44,28 @@ brickTexture.wrapT = THREE.RepeatWrapping;
 brickTexture.repeat.set(4, 2);
 
 const glassMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xadd8e6, metalness: 0.1, roughness: 0, ior: 1.5,
-    transmission: 1.0, transparent: true, thickness: 0.5, reflectivity: 1.0
+    color: 0xadd8e6, metalness: 0.1, roughness: 0, ior: 1.5,
+    transmission: 1.0, transparent: true, thickness: 0.5, reflectivity: 1.0
 });
 
 // #############################################
-// ## 2. CONTROLS, LIGHTING & RESPONSIVENESS ##
+// ## 2. AUDIO, CONTROLS, LIGHTING & RESPONSIVENESS ##
 // #############################################
 
-// Se declara variabilele in afara blocului if/else
+// =================== MODIFICARE: SETUP AUDIO ===================
+const listener = new THREE.AudioListener();
+camera.add(listener);
+const sound = new THREE.Audio(listener);
+const audioLoader = new THREE.AudioLoader();
+audioLoader.load('muzica.mp3', function(buffer) { // Asigură-te că ai un fișier 'muzica.mp3'
+    sound.setBuffer(buffer);
+    sound.setLoop(true);
+    sound.setVolume(0.5);
+});
+// Variabilă pentru a porni sunetul doar după o interacțiune
+let audioStarted = false;
+// =================== SFÂRȘIT MODIFICARE AUDIO ===================
+
 let controls;
 let keysPressed = {
   'KeyW': false,
@@ -60,13 +73,13 @@ let keysPressed = {
   'KeyS': false,
   'KeyD': false,
   'Space': false
-}; // Folosit doar pentru desktop
+};
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-directionalLight.position.set(50, 50, 25); // Pozitia initiala, de sus
+directionalLight.position.set(50, 50, 25);
 directionalLight.castShadow = true;
 directionalLight.shadow.camera.top = 50;
 directionalLight.shadow.camera.bottom = -50;
@@ -76,12 +89,8 @@ scene.add(directionalLight);
 
 const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.1, roughness: 0.8 });
 
-// ## LOGICA CONDITIONATA PENTRU CONTROALE ##
-
 if (isMobile) {
-    // --- SETUP PENTRU MOBIL ---
-    document.getElementById('instructions-desktop')?.remove(); // Sterge instructiunile de desktop daca exista
-    
+    document.getElementById('instructions-desktop')?.remove();
     camera.position.set(25, 10, 60);
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -89,14 +98,9 @@ if (isMobile) {
     controls.screenSpacePanning = false;
     controls.maxPolarAngle = Math.PI / 2.1;
     controls.target.set(0, 5, 0);
-
 } else {
-    // --- SETUP PENTRU DESKTOP (CODUL ORIGINAL) ---
-    document.getElementById('instructions-mobile')?.remove(); // Sterge instructiunile de mobil daca exista
-    
+    document.getElementById('instructions-mobile')?.remove();
     controls = new PointerLockControls(camera, document.body);
-    
-    // Adaugam un element HTML pentru instructiuni
     const instructions = document.createElement('div');
     instructions.id = 'instructions-desktop';
     instructions.innerHTML = 'Click pentru a începe<br>(W, A, S, D = Mișcare, MOUSE = Privire, SPACE = Săritură)';
@@ -109,28 +113,33 @@ if (isMobile) {
 
     controls.addEventListener('lock', () => {
         instructions.style.display = 'none';
+        // =================== MODIFICARE: PORNIRE AUDIO ===================
+        // Pornim contextul audio la prima interacțiune
+        if (!audioStarted && listener.context.state === 'suspended') {
+            listener.context.resume();
+        }
+        audioStarted = true;
+        // =================== SFÂRȘIT MODIFICARE AUDIO ===================
     });
-    
+
     controls.addEventListener('unlock', () => {
         instructions.style.display = '';
     });
 
     controls.object.position.set(25, 5, 45);
     scene.add(controls.object);
-    
+
     document.addEventListener('keydown', (event) => { keysPressed[event.code] = true; });
     document.addEventListener('keyup', (event) => { keysPressed[event.code] = false; });
 }
 
-// ## RESPONSIVE RESIZE HANDLER (pentru ambele platforme) ##
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Restul codului pentru constructii (ramane neschimbat)...
-// ## 4. BUILDING COMPONENTS ##
+// ## 4. BUILDING COMPONENTS & ZONES ##
 const groundGeometry = new THREE.PlaneGeometry(200, 200);
 const ground = new THREE.Mesh(groundGeometry, concreteMaterial);
 ground.rotation.x = -Math.PI / 2;
@@ -142,77 +151,78 @@ const pillarGeometry = new THREE.BoxGeometry(1, 6, 1);
 const numPillars = 14;
 const pillarSpacing = 4;
 for (let i = 0; i < numPillars; i++) {
-    const xPos = (i - (numPillars - 1) / 2) * pillarSpacing;
-    const yPos = 3; 
-    const frontPillar = new THREE.Mesh(pillarGeometry, concreteMaterial);
-    frontPillar.position.set(xPos, yPos, 14);
-    frontPillar.castShadow = true;
-    pillarGroup.add(frontPillar);
-    const backPillar = new THREE.Mesh(pillarGeometry, concreteMaterial);
-    backPillar.position.set(xPos, yPos, -14);
-    backPillar.castShadow = true;
-    pillarGroup.add(backPillar);
+    const xPos = (i - (numPillars - 1) / 2) * pillarSpacing;
+    const yPos = 3;
+    const frontPillar = new THREE.Mesh(pillarGeometry, concreteMaterial);
+    frontPillar.position.set(xPos, yPos, 14);
+    frontPillar.castShadow = true;
+    pillarGroup.add(frontPillar);
+    const backPillar = new THREE.Mesh(pillarGeometry, concreteMaterial);
+    backPillar.position.set(xPos, yPos, -14);
+    backPillar.castShadow = true;
+    pillarGroup.add(backPillar);
 }
 scene.add(pillarGroup);
 const mainStructure = new THREE.Group();
 const floorHeight = 7;
 const numFloors = 1;
+
 function createFloor(level) {
-    const floorGroup = new THREE.Group();
-    const yPos = 6 + (level * floorHeight);
-    const slabWidth = pillarSpacing * numPillars;
-    const slabDepth = 35;
-    const slabThickness = 1;
-    const holeWidth = slabWidth - 25;
-    const holeDepth = slabDepth - 10;
-    const slabShape = new THREE.Shape();
-    slabShape.moveTo(-slabWidth / 2, -slabDepth / 2);
-    slabShape.lineTo(-slabWidth / 2, slabDepth / 2);
-    slabShape.lineTo(slabWidth / 2, slabDepth / 2);
-    slabShape.lineTo(slabWidth / 2, -slabDepth / 2);
-    slabShape.lineTo(-slabWidth / 2, -slabDepth / 2);
-    const holePath = new THREE.Path();
-    holePath.moveTo(-holeWidth / 2, -holeDepth / 2);
-    holePath.lineTo(-holeWidth / 2, holeDepth / 2);
-    holePath.lineTo(holeWidth / 2, holeDepth / 2);
-    holePath.lineTo(holeWidth / 2, -holeDepth / 2);
-    holePath.lineTo(-holeWidth / 2, -holeDepth / 2);
-    slabShape.holes.push(holePath);
-    const extrudeSettings = { steps: 1, depth: slabThickness, bevelEnabled: false };
-    const slabGeometry = new THREE.ExtrudeGeometry(slabShape, extrudeSettings);
-    const slab = new THREE.Mesh(slabGeometry, concreteMaterial);
-    slab.position.y = yPos + slabThickness / 2;
-    slab.rotation.x = -Math.PI / 2;
-    slab.receiveShadow = true;
-    slab.castShadow = true;
-    floorGroup.add(slab);
-    const columnGeometry = new THREE.BoxGeometry(1, floorHeight, 1.5);
-    const windowGeometry = new THREE.BoxGeometry(pillarSpacing - 1, floorHeight - 1, 0.2);
-    for (let i = 0; i < numPillars; i++) {
-        const xPos = (i - (numPillars - 1) / 2) * pillarSpacing;
-        const frontCol = new THREE.Mesh(columnGeometry, concreteMaterial);
-        frontCol.position.set(xPos, yPos + floorHeight / 2 - 0.5, 14);
-        frontCol.castShadow = true;
-        floorGroup.add(frontCol);
-        const backCol = new THREE.Mesh(columnGeometry, concreteMaterial);
-        backCol.position.set(xPos, yPos + floorHeight / 2 - 0.5, -14);
-        backCol.castShadow = true;
-        floorGroup.add(backCol);
-        if (i < numPillars - 1) {
-            const windowX = xPos + pillarSpacing / 2;
-            const windowY = yPos + floorHeight / 2;
-            const frontWindow = new THREE.Mesh(windowGeometry, glassMaterial);
-            frontWindow.position.set(windowX, windowY, 14);
-            floorGroup.add(frontWindow);
-            const backWindow = new THREE.Mesh(windowGeometry, glassMaterial);
-            backWindow.position.set(windowX, windowY, -14);
-            floorGroup.add(backWindow);
-        }
-    }
-    return floorGroup;
+    const floorGroup = new THREE.Group();
+    const yPos = 6 + (level * floorHeight);
+    const slabWidth = pillarSpacing * numPillars;
+    const slabDepth = 35;
+    const slabThickness = 1;
+    const holeWidth = slabWidth - 25;
+    const holeDepth = slabDepth - 10;
+    const slabShape = new THREE.Shape();
+    slabShape.moveTo(-slabWidth / 2, -slabDepth / 2);
+    slabShape.lineTo(-slabWidth / 2, slabDepth / 2);
+    slabShape.lineTo(slabWidth / 2, slabDepth / 2);
+    slabShape.lineTo(slabWidth / 2, -slabDepth / 2);
+    slabShape.lineTo(-slabWidth / 2, -slabDepth / 2);
+    const holePath = new THREE.Path();
+    holePath.moveTo(-holeWidth / 2, -holeDepth / 2);
+    holePath.lineTo(-holeWidth / 2, holeDepth / 2);
+    holePath.lineTo(holeWidth / 2, holeDepth / 2);
+    holePath.lineTo(holeWidth / 2, -holeDepth / 2);
+    holePath.lineTo(-holeWidth / 2, -holeDepth / 2);
+    slabShape.holes.push(holePath);
+    const extrudeSettings = { steps: 1, depth: slabThickness, bevelEnabled: false };
+    const slabGeometry = new THREE.ExtrudeGeometry(slabShape, extrudeSettings);
+    const slab = new THREE.Mesh(slabGeometry, concreteMaterial);
+    slab.position.y = yPos + slabThickness / 2;
+    slab.rotation.x = -Math.PI / 2;
+    slab.receiveShadow = true;
+    slab.castShadow = true;
+    floorGroup.add(slab);
+    const columnGeometry = new THREE.BoxGeometry(1, floorHeight, 1.5);
+    const windowGeometry = new THREE.BoxGeometry(pillarSpacing - 1, floorHeight - 1, 0.2);
+    for (let i = 0; i < numPillars; i++) {
+        const xPos = (i - (numPillars - 1) / 2) * pillarSpacing;
+        const frontCol = new THREE.Mesh(columnGeometry, concreteMaterial);
+        frontCol.position.set(xPos, yPos + floorHeight / 2 - 0.5, 14);
+        frontCol.castShadow = true;
+        floorGroup.add(frontCol);
+        const backCol = new THREE.Mesh(columnGeometry, concreteMaterial);
+        backCol.position.set(xPos, yPos + floorHeight / 2 - 0.5, -14);
+        backCol.castShadow = true;
+        floorGroup.add(backCol);
+        if (i < numPillars - 1) {
+            const windowX = xPos + pillarSpacing / 2;
+            const windowY = yPos + floorHeight / 2;
+            const frontWindow = new THREE.Mesh(windowGeometry, glassMaterial);
+            frontWindow.position.set(windowX, windowY, 14);
+            floorGroup.add(frontWindow);
+            const backWindow = new THREE.Mesh(windowGeometry, glassMaterial);
+            backWindow.position.set(windowX, windowY, -14);
+            floorGroup.add(backWindow);
+        }
+    }
+    return floorGroup;
 }
 for (let i = 0; i < numFloors; i++) {
-    mainStructure.add(createFloor(i));
+    mainStructure.add(createFloor(i));
 }
 scene.add(mainStructure);
 const slabWidth = pillarSpacing * numPillars;
@@ -237,13 +247,13 @@ canvas.width = 412; canvas.height = 86;
 context.fillStyle = '#9B111E';
 context.fillRect(0, 0, canvas.width, canvas.height);
 for (let i = 0; i < 5000; i++) {
-    const x = Math.random() * canvas.width;
-    const y = Math.random() * canvas.height;
-    const radius = Math.random() * 2;
-    context.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.1})`;
-    context.fillRect(x, y, radius, radius);
-    context.fillStyle = `rgba(40, 26, 13, ${Math.random() * 0.1})`;
-    context.fillRect(x, y, radius, radius);
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const radius = Math.random() * 2;
+    context.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.1})`;
+    context.fillRect(x, y, radius, radius);
+    context.fillStyle = `rgba(40, 26, 13, ${Math.random() * 0.1})`;
+    context.fillRect(x, y, radius, radius);
 }
 context.fillStyle = 'white';
 context.font = 'bold 40px Arial';
@@ -252,7 +262,7 @@ context.textBaseline = 'middle';
 context.fillText('HYPERMARKET', canvas.width / 2, canvas.height / 2);
 const bannerTexture = new THREE.CanvasTexture(canvas);
 const bannerMaterial = new THREE.MeshStandardMaterial({
-    map: bannerTexture, side: THREE.DoubleSide, metalness: 0, roughness: 1
+    map: bannerTexture, side: THREE.DoubleSide, metalness: 0, roughness: 1
 });
 const bannerWidth = (pillarSpacing * numPillars) / 2;
 const roofBaseY = 5 + (numFloors * floorHeight);
@@ -290,51 +300,51 @@ const domeGroup = new THREE.Group();
 const domeColor = 'blue'; const tubeRadius = 0.25;
 const metalMaterial = new THREE.MeshStandardMaterial({ color: domeColor, metalness: 1, roughness: 0.3 });
 for (let i = 1; i <= domeRings; i++) {
-    const phi = (Math.PI / 2.2) * (i / domeRings);
-    const y = Math.sin(phi) * domeRadius;
-    const r = Math.cos(phi) * domeRadius;
-    let prevPoint = null;
-    for (let j = 0; j <= domeSegments; j++) {
-        const theta = (j / domeSegments) * Math.PI * 2;
-        const point = new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r);
-        if (prevPoint) {
-            const dir = new THREE.Vector3().subVectors(point, prevPoint);
-            const length = dir.length();
-            const mid = new THREE.Vector3().addVectors(prevPoint, point).multiplyScalar(0.5);
-            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(tubeRadius, tubeRadius, length, 8), metalMaterial);
-            cylinder.position.copy(mid);
-            cylinder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-            domeGroup.add(cylinder);
-        }
-        prevPoint = point;
-    }
+    const phi = (Math.PI / 2.2) * (i / domeRings);
+    const y = Math.sin(phi) * domeRadius;
+    const r = Math.cos(phi) * domeRadius;
+    let prevPoint = null;
+    for (let j = 0; j <= domeSegments; j++) {
+        const theta = (j / domeSegments) * Math.PI * 2;
+        const point = new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r);
+        if (prevPoint) {
+            const dir = new THREE.Vector3().subVectors(point, prevPoint);
+            const length = dir.length();
+            const mid = new THREE.Vector3().addVectors(prevPoint, point).multiplyScalar(0.5);
+            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(tubeRadius, tubeRadius, length, 8), metalMaterial);
+            cylinder.position.copy(mid);
+            cylinder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+            domeGroup.add(cylinder);
+        }
+        prevPoint = point;
+    }
 }
 for (let i = 0; i < domeSegments; i++) {
-    const theta = (i / domeSegments) * Math.PI * 2;
-    let prevPoint = null;
-    for (let j = 1; j <= domeRings; j++) {
-        const phi = (Math.PI / 2.2) * (j / domeRings);
-        const y = Math.sin(phi) * domeRadius;
-        const r = Math.cos(phi) * domeRadius;
-        const point = new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r);
-        if (prevPoint) {
-            const dir = new THREE.Vector3().subVectors(point, prevPoint);
-            const length = dir.length();
-            const mid = new THREE.Vector3().addVectors(prevPoint, point).multiplyScalar(0.5);
-            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(tubeRadius, tubeRadius, length, 8), metalMaterial);
-            cylinder.position.copy(mid);
-            cylinder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-            domeGroup.add(cylinder);
-        }
-        prevPoint = point;
-    }
+    const theta = (i / domeSegments) * Math.PI * 2;
+    let prevPoint = null;
+    for (let j = 1; j <= domeRings; j++) {
+        const phi = (Math.PI / 2.2) * (j / domeRings);
+        const y = Math.sin(phi) * domeRadius;
+        const r = Math.cos(phi) * domeRadius;
+        const point = new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r);
+        if (prevPoint) {
+            const dir = new THREE.Vector3().subVectors(point, prevPoint);
+            const length = dir.length();
+            const mid = new THREE.Vector3().addVectors(prevPoint, point).multiplyScalar(0.5);
+            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(tubeRadius, tubeRadius, length, 8), metalMaterial);
+            cylinder.position.copy(mid);
+            cylinder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+            domeGroup.add(cylinder);
+        }
+        prevPoint = point;
+    }
 }
 domeGroup.position.y = 10.5;
 scene.add(domeGroup);
 const welcomePanelGroup = new THREE.Group();
 const welcomeCanvas = document.createElement('canvas');
 const welcomeContext = welcomeCanvas.getContext('2d');
-welcomeCanvas.width = 1536; welcomeCanvas.height = 1024; 
+welcomeCanvas.width = 1536; welcomeCanvas.height = 1024;
 welcomeContext.fillStyle = '#CC0000';
 welcomeContext.fillRect(0, 0, welcomeCanvas.width, welcomeCanvas.height);
 welcomeContext.textAlign = 'center'; welcomeContext.textBaseline = 'middle'; welcomeContext.fillStyle = 'white';
@@ -354,211 +364,199 @@ welcomeContext.font = 'bold 45px Sans-serif';
 welcomeContext.fillText('TRĂIASCĂ LITERATURA! TRĂIASCĂ POPORUL!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.72);
 welcomeContext.font = 'bold 45px Sans-serif';
 welcomeContext.fillText('ÎN FRUNTE CU SCRIITORUL LUI IUBIT!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.82);
-// =================== ÎNCEPUT BLOC MODIFICAT ===================
 
 const welcomeTexture = new THREE.CanvasTexture(welcomeCanvas);
 
-// PASUL 1: Modificăm materialul panoului cu text.
-// Am eliminat 'side: THREE.DoubleSide' pentru ca spatele să devină transparent
-// și textul să fie vizibil doar pe față.
-const welcomeMaterial = new THREE.MeshStandardMaterial({ 
+const welcomeMaterial = new THREE.MeshStandardMaterial({
     map: welcomeTexture,
-    // side: THREE.FrontSide este implicit, deci nu mai trebuie specificat
 });
 
-const panelWidth = 15; 
+const panelWidth = 15;
 const panelHeight = 10;
 const welcomePanelGeometry = new THREE.PlaneGeometry(panelWidth, panelHeight);
 
-// Creăm panoul cu text (fața)
 const welcomePanel = new THREE.Mesh(welcomePanelGeometry, welcomeMaterial);
-welcomePanel.castShadow = true; 
+welcomePanel.castShadow = true;
 welcomePanel.receiveShadow = true;
 welcomePanel.position.y = 1.5;
-// Panoul are implicit pozitia z=0 în interiorul grupului.
-
-// =================== ÎNCEPUT BLOC GRAFFITI (CORECTAT FINAL) ===================
-
-// PASUL 2: Creăm un canvas pentru a desena graffiti-ul.
 
 const graffitiCanvas = document.createElement('canvas');
 const graffitiContext = graffitiCanvas.getContext('2d');
-
-// Setăm dimensiunile
 graffitiCanvas.width = 750;
 graffitiCanvas.height = 500;
-
-// 2.1. Desenăm fundalul roșu
 graffitiContext.fillStyle = '#CC0000';
 graffitiContext.fillRect(0, 0, graffitiCanvas.width, graffitiCanvas.height);
-
-// 2.2. Setăm stilul pentru graffiti
 graffitiContext.fillStyle = '#FFFF99';
 graffitiContext.strokeStyle = '#FFFF99';
 graffitiContext.lineWidth = 8;
 graffitiContext.font = 'bold 50px cursive';
 graffitiContext.textAlign = 'center';
 graffitiContext.textBaseline = 'middle';
-
-// 2.3. Adăugăm textul pe canvas
 graffitiContext.fillText('Petre + Geta', graffitiCanvas.width / 2, graffitiCanvas.height * 0.3);
 graffitiContext.fillText('= LOVE', graffitiCanvas.width / 2, graffitiCanvas.height * 0.45);
-
-// 2.4. Desenăm inima și săgeata
 const centerX = graffitiCanvas.width / 2;
 const centerY = graffitiCanvas.height * 0.7;
-
-// Mărim inima cu 50%
 const size = 75;
-
 graffitiContext.save();
 graffitiContext.translate(centerX, centerY);
-
-// Desenăm Inima (mai mare)
 graffitiContext.beginPath();
 graffitiContext.moveTo(0, size * 0.25);
 graffitiContext.bezierCurveTo(size * 0.5, -size * 0.5, size, 0, 0, size);
 graffitiContext.bezierCurveTo(-size, 0, -size * 0.5, -size * 0.5, 0, size * 0.25);
 graffitiContext.closePath();
 graffitiContext.fill();
-
-// ### MODIFICARE: Folosim un unghi negativ pentru a orienta săgeata ÎN SUS ###
-graffitiContext.rotate(-Math.PI / 4); // Unghi de -45 de grade (în sus și la dreapta)
-
-// Desenăm Săgeata
+graffitiContext.rotate(-Math.PI / 4);
 graffitiContext.beginPath();
 graffitiContext.moveTo(-size * 1.5, 0);
 graffitiContext.lineTo(size * 1.5, 0);
 graffitiContext.stroke();
-// Vârful săgeții
 graffitiContext.beginPath();
 graffitiContext.moveTo(size * 1.5, 0);
 graffitiContext.lineTo(size * 1.3, -size * 0.3);
 graffitiContext.lineTo(size * 1.3, size * 0.3);
 graffitiContext.closePath();
 graffitiContext.fill();
-
 graffitiContext.restore();
-
-// 2.5. Creăm textura din canvas
 const graffitiTexture = new THREE.CanvasTexture(graffitiCanvas);
-
-// Corectăm efectul de oglindă
 graffitiTexture.wrapS = THREE.RepeatWrapping;
 graffitiTexture.repeat.x = -1;
-
-// 2.6. Creăm materialul final pentru spate, folosind textura
 const backPanelMaterial = new THREE.MeshStandardMaterial({
     map: graffitiTexture,
     side: THREE.BackSide
 });
 
-// =================== SFÂRȘIT BLOC GRAFFITI (CORECTAT FINAL) ===================
-
-// PASUL 3: Creăm mesh-ul pentru spatele panoului.
-// Folosim aceeași geometrie, dar îl poziționăm foarte puțin în spate (pe axa Z)
-// pentru a evita ca suprafețele să "pâlpâie" (un efect numit Z-fighting).
 const backPanel = new THREE.Mesh(welcomePanelGeometry, backPanelMaterial);
-backPanel.position.y = 1.5; // Aceeași înălțime ca panoul frontal
-backPanel.position.z = -0.01; // Îl plasăm imediat în spatele panoului cu text
-backPanel.receiveShadow = true; // Spatele panoului poate primi umbre
+backPanel.position.y = 1.5;
+backPanel.position.z = -0.01;
+backPanel.receiveShadow = true;
 
-// PASUL 4: Adăugăm AMBELE panouri la grup.
-welcomePanelGroup.add(welcomePanel); // Adaugă panoul cu text (fața)
-welcomePanelGroup.add(backPanel);   // Adaugă panoul roșu (spatele)
+welcomePanelGroup.add(welcomePanel);
+welcomePanelGroup.add(backPanel);
 
-// =================== SFÂRȘIT BLOC MODIFICAT ===================
 const barHeight = 8; const barRadius = 0.15;
 const barGeometry = new THREE.CylinderGeometry(barRadius, barRadius, barHeight, 16);
 const barMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
 const leftBar = new THREE.Mesh(barGeometry, barMaterial);
-leftBar.position.set(-panelWidth / 2, -1, -0.1); 
+leftBar.position.set(-panelWidth / 2, -1, -0.1);
 leftBar.castShadow = true;
 welcomePanelGroup.add(leftBar);
 const rightBar = new THREE.Mesh(barGeometry, barMaterial);
-rightBar.position.set(panelWidth / 2, -1, -0.1); 
+rightBar.position.set(panelWidth / 2, -1, -0.1);
 rightBar.castShadow = true;
 welcomePanelGroup.add(rightBar);
 welcomePanelGroup.position.set(29, 5, 33);
 scene.add(welcomePanelGroup);
+
+// ## 5. COLLISION & PHYSICS SETUP ##
+
 const playerCollider = new THREE.Box3();
-const playerSize = new THREE.Vector3(1, 5, 1);
-const leftWallCollider = new THREE.Box3().setFromObject(leftWall);
-const rightWallCollider = new THREE.Box3().setFromObject(rightWall);
-leftWall.updateMatrixWorld();
-rightWall.updateMatrixWorld();
-renderer.compile(scene, camera);
+const playerSize = new THREE.Vector3(1, 5, 1); // Lățime, înălțime, adâncime jucător
 const playerVelocity = new THREE.Vector3();
 const jumpHeight = 20;
 const gravity = -20;
 
+// =================== MODIFICARE: COLLIDERS ===================
+// Creăm cutiile de coliziune PENTRU TOATE OBSTACOLELE
+const leftWallCollider = new THREE.Box3().setFromObject(leftWall);
+const rightWallCollider = new THREE.Box3().setFromObject(rightWall);
+const welcomePanelCollider = new THREE.Box3().setFromObject(welcomePanelGroup);
 
-// ## 5. ANIMATION LOOP ##
+// O listă cu toate obstacolele din scenă
+const colliders = [leftWallCollider, rightWallCollider, welcomePanelCollider];
+// =================== SFÂRȘIT MODIFICARE COLLIDERS ===================
+
+// =================== MODIFICARE: ZONA MUZICALĂ ===================
+// Definim o cutie invizibilă care reprezintă interiorul clădirii
+const musicZone = new THREE.Box3(
+    new THREE.Vector3(-slabWidth / 2, -10, -wallDepth / 2),
+    new THREE.Vector3(slabWidth / 2, 50, wallDepth / 2)
+);
+let isPlayerInMusicZone = false; // Starea curentă
+// =================== SFÂRȘIT MODIFICARE ZONA MUZICALĂ ===================
+
+
+renderer.compile(scene, camera);
+
+// ## 6. ANIMATION LOOP ##
 function animate() {
     requestAnimationFrame(animate);
 
     if (isMobile) {
-        // --- LOGICA PENTRU MOBIL ---
         if (controls) controls.update();
-
     } else {
-        // --- LOGICA PENTRU DESKTOP ---
         const deltaTime = clock.getDelta();
 
         if (controls && controls.isLocked === true) {
+            // Logica de frecare / încetinire
             playerVelocity.x -= playerVelocity.x * 10.0 * deltaTime;
             playerVelocity.z -= playerVelocity.z * 10.0 * deltaTime;
+
+            // Aplicăm gravitația
             playerVelocity.y += gravity * deltaTime;
 
-// =================== ÎNCEPUT BLOC DE MIȘCARE CORECTAT ===================
+            const direction = new THREE.Vector3();
+            direction.z = Number(keysPressed['KeyS']) - Number(keysPressed['KeyW']);
+            direction.x = Number(keysPressed['KeyA']) - Number(keysPressed['KeyD']);
 
-const direction = new THREE.Vector3();
-// Aici este corectura: am inversat S și W pentru a potrivi direcția corectă
-direction.z = Number(keysPressed['KeyS']) - Number(keysPressed['KeyW']);
-direction.x = Number(keysPressed['KeyA']) - Number(keysPressed['KeyD']);
+            if (direction.lengthSq() > 0) {
+                direction.normalize();
+                const speed = 400.0;
+                playerVelocity.x += direction.x * speed * deltaTime;
+                playerVelocity.z += direction.z * speed * deltaTime;
+            }
 
-// Verificăm dacă există vreo intenție de mișcare
-if (direction.lengthSq() > 0) {
-    // Normalizăm vectorul pentru a avea o viteză constantă indiferent dacă mergem drept sau pe diagonală
-    direction.normalize();
+            // =================== MODIFICARE: LOGICA DE COLIZIUNE EXTINSĂ ===================
+            // Stocăm poziția veche înainte de a o modifica
+            const oldPosition = controls.object.position.clone();
 
-    const speed = 400.0;
-    
-    // Aplicăm viteza direct, bazat pe vectorul de direcție normalizat.
-    playerVelocity.x += direction.x * speed * deltaTime;
-    playerVelocity.z += direction.z * speed * deltaTime;
-}
+            // Aplicăm viteza pe fiecare axă separat pentru a gestiona coliziunile mai ușor
+            controls.object.position.x -= playerVelocity.x * deltaTime;
+            controls.object.position.z -= playerVelocity.z * deltaTime;
 
-// =================== SFÂRȘIT BLOC DE MIȘCARE CORECTAT ===================
+            // Actualizăm cutia de coliziune a jucătorului cu noua poziție potențială
+            playerCollider.setFromCenterAndSize(controls.object.position, playerSize);
 
-            controls.moveRight(-playerVelocity.x * deltaTime);
-            controls.moveForward(-playerVelocity.z * deltaTime);
-            controls.object.position.y += playerVelocity.y * deltaTime;
-
-            const playerPos = controls.object.position;
-            playerCollider.setFromCenterAndSize(playerPos, playerSize);
-
-            const colliders = [leftWallCollider, rightWallCollider];
+            // Verificăm coliziunea cu FIECARE obstacol
             for (const collider of colliders) {
                 if (playerCollider.intersectsBox(collider)) {
-                    const penetrationLeft = playerCollider.max.x - collider.min.x;
-                    const penetrationRight = collider.max.x - playerCollider.min.x;
-                    if (penetrationLeft < penetrationRight) {
-                        playerPos.x -= penetrationLeft;
-                    } else {
-                        playerPos.x += penetrationRight;
-                    }
+                    // Dacă există o coliziune, revenim la poziția veche pe axa respectivă
+                    controls.object.position.copy(oldPosition);
+                    // Oprim viteza pe acea axă pentru a preveni "lipirea" de perete
                     playerVelocity.x = 0;
+                    playerVelocity.z = 0;
+                    // Ieșim din buclă, deoarece o coliziune este suficientă
+                    break; 
                 }
             }
-            
-            if (playerPos.y < 5) {
+             // =================== SFÂRȘIT MODIFICARE LOGICA DE COLIZIUNE ===================
+
+
+            // Aplicăm mișcarea pe verticală (săritura)
+            controls.object.position.y += playerVelocity.y * deltaTime;
+
+            // Coliziunea cu solul
+            if (controls.object.position.y < 5) {
                 playerVelocity.y = 0;
-                playerPos.y = 5;
+                controls.object.position.y = 5;
                 if (keysPressed['Space']) {
                     playerVelocity.y = jumpHeight;
                 }
             }
+
+             // =================== MODIFICARE: LOGICA MUZICII ===================
+            const isInside = musicZone.containsPoint(controls.object.position);
+
+            if (isInside && !isPlayerInMusicZone) {
+                // Jucătorul a intrat în zonă
+                if (sound.isPaused) sound.play(); // Repornește dacă era pe pauză
+                else if (!sound.isPlaying) sound.play(); // Pornește dacă era oprit
+                isPlayerInMusicZone = true;
+            } else if (!isInside && isPlayerInMusicZone) {
+                // Jucătorul a ieșit din zonă
+                sound.pause(); // Punem muzica pe pauză, nu pe stop, ca să reia de unde a rămas
+                isPlayerInMusicZone = false;
+            }
+            // =================== SFÂRȘIT MODIFICARE LOGICA MUZICII ===================
         }
     }
     
