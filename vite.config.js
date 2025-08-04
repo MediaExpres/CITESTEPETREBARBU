@@ -2,7 +2,22 @@ import { defineConfig } from 'vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // Aici setezi numele subfolderului în care vei publica aplicația.
-  // Asigură-te că pui slash-uri la început și la sfârșit.
-  base: '/proiect-3d/', // <-- IMPORTANT: Schimbă 'proiect-3d' cu numele real al folderului tău!
+  // --- Configurația ta existentă, care rămâne neschimbată ---
+  // Setează subfolderul în care vei publica aplicația.
+  base: '/proiect-3d/',
+
+
+  // --- Aici adăugăm noua configurație pentru build ---
+  build: {
+    rollupOptions: {
+      output: {
+        // Această funcție separă biblioteca 'three' într-un fișier propriu
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) {
+            return 'vendor-three';
+          }
+        }
+      }
+    }
+  }
 })
