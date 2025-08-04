@@ -371,7 +371,7 @@ welcomeContext.fillText('Cu SPACEBAR săriți în sus de bucurie!', welcomeCanva
 welcomeContext.font = 'bold 45px Sans-serif';
 welcomeContext.fillText('TRĂIASCĂ LITERATURA! TRĂIASCĂ POPORUL!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.72);
 welcomeContext.font = 'bold 45px Sans-serif';
-welcomeContext.fillText('ÎN FRUNTE CU SCRIITORUL LUI IUBIT!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.82);
+welcomeContext.fillText('ÎN FRUNTE CU SCRIITORUL SĂU IUBIT!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.82);
 
 const welcomeTexture = new THREE.CanvasTexture(welcomeCanvas);
 const welcomeMaterial = new THREE.MeshStandardMaterial({
