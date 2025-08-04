@@ -54,13 +54,19 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 
 // Se declara variabilele in afara blocului if/else
 let controls;
-let keysPressed = {}; // Folosit doar pentru desktop
+let keysPressed = {
+  'KeyW': false,
+  'KeyA': false,
+  'KeyS': false,
+  'KeyD': false,
+  'Space': false
+}; // Folosit doar pentru desktop
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-directionalLight.position.set(-50, 50, -25); // Pozitia corecta, de sus
+directionalLight.position.set(50, 50, 25); // Pozitia initiala, de sus
 directionalLight.castShadow = true;
 directionalLight.shadow.camera.top = 50;
 directionalLight.shadow.camera.bottom = -50;
@@ -348,14 +354,120 @@ welcomeContext.font = 'bold 45px Sans-serif';
 welcomeContext.fillText('TRĂIASCĂ LITERATURA! TRĂIASCĂ POPORUL!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.72);
 welcomeContext.font = 'bold 45px Sans-serif';
 welcomeContext.fillText('ÎN FRUNTE CU SCRIITORUL LUI IUBIT!', welcomeCanvas.width / 2, welcomeCanvas.height * 0.82);
+// =================== ÎNCEPUT BLOC MODIFICAT ===================
+
 const welcomeTexture = new THREE.CanvasTexture(welcomeCanvas);
-const welcomeMaterial = new THREE.MeshStandardMaterial({ map: welcomeTexture, side: THREE.DoubleSide });
-const panelWidth = 15; const panelHeight = 10;
+
+// PASUL 1: Modificăm materialul panoului cu text.
+// Am eliminat 'side: THREE.DoubleSide' pentru ca spatele să devină transparent
+// și textul să fie vizibil doar pe față.
+const welcomeMaterial = new THREE.MeshStandardMaterial({ 
+    map: welcomeTexture,
+    // side: THREE.FrontSide este implicit, deci nu mai trebuie specificat
+});
+
+const panelWidth = 15; 
+const panelHeight = 10;
 const welcomePanelGeometry = new THREE.PlaneGeometry(panelWidth, panelHeight);
+
+// Creăm panoul cu text (fața)
 const welcomePanel = new THREE.Mesh(welcomePanelGeometry, welcomeMaterial);
-welcomePanel.castShadow = true; welcomePanel.receiveShadow = true;
+welcomePanel.castShadow = true; 
+welcomePanel.receiveShadow = true;
 welcomePanel.position.y = 1.5;
-welcomePanelGroup.add(welcomePanel);
+// Panoul are implicit pozitia z=0 în interiorul grupului.
+
+// =================== ÎNCEPUT BLOC GRAFFITI (CORECTAT FINAL) ===================
+
+// PASUL 2: Creăm un canvas pentru a desena graffiti-ul.
+
+const graffitiCanvas = document.createElement('canvas');
+const graffitiContext = graffitiCanvas.getContext('2d');
+
+// Setăm dimensiunile
+graffitiCanvas.width = 750;
+graffitiCanvas.height = 500;
+
+// 2.1. Desenăm fundalul roșu
+graffitiContext.fillStyle = '#CC0000';
+graffitiContext.fillRect(0, 0, graffitiCanvas.width, graffitiCanvas.height);
+
+// 2.2. Setăm stilul pentru graffiti
+graffitiContext.fillStyle = '#FFFF99';
+graffitiContext.strokeStyle = '#FFFF99';
+graffitiContext.lineWidth = 8;
+graffitiContext.font = 'bold 50px cursive';
+graffitiContext.textAlign = 'center';
+graffitiContext.textBaseline = 'middle';
+
+// 2.3. Adăugăm textul pe canvas
+graffitiContext.fillText('Petre + Geta', graffitiCanvas.width / 2, graffitiCanvas.height * 0.3);
+graffitiContext.fillText('= LOVE', graffitiCanvas.width / 2, graffitiCanvas.height * 0.45);
+
+// 2.4. Desenăm inima și săgeata
+const centerX = graffitiCanvas.width / 2;
+const centerY = graffitiCanvas.height * 0.7;
+
+// Mărim inima cu 50%
+const size = 75;
+
+graffitiContext.save();
+graffitiContext.translate(centerX, centerY);
+
+// Desenăm Inima (mai mare)
+graffitiContext.beginPath();
+graffitiContext.moveTo(0, size * 0.25);
+graffitiContext.bezierCurveTo(size * 0.5, -size * 0.5, size, 0, 0, size);
+graffitiContext.bezierCurveTo(-size, 0, -size * 0.5, -size * 0.5, 0, size * 0.25);
+graffitiContext.closePath();
+graffitiContext.fill();
+
+// ### MODIFICARE: Folosim un unghi negativ pentru a orienta săgeata ÎN SUS ###
+graffitiContext.rotate(-Math.PI / 4); // Unghi de -45 de grade (în sus și la dreapta)
+
+// Desenăm Săgeata
+graffitiContext.beginPath();
+graffitiContext.moveTo(-size * 1.5, 0);
+graffitiContext.lineTo(size * 1.5, 0);
+graffitiContext.stroke();
+// Vârful săgeții
+graffitiContext.beginPath();
+graffitiContext.moveTo(size * 1.5, 0);
+graffitiContext.lineTo(size * 1.3, -size * 0.3);
+graffitiContext.lineTo(size * 1.3, size * 0.3);
+graffitiContext.closePath();
+graffitiContext.fill();
+
+graffitiContext.restore();
+
+// 2.5. Creăm textura din canvas
+const graffitiTexture = new THREE.CanvasTexture(graffitiCanvas);
+
+// Corectăm efectul de oglindă
+graffitiTexture.wrapS = THREE.RepeatWrapping;
+graffitiTexture.repeat.x = -1;
+
+// 2.6. Creăm materialul final pentru spate, folosind textura
+const backPanelMaterial = new THREE.MeshStandardMaterial({
+    map: graffitiTexture,
+    side: THREE.BackSide
+});
+
+// =================== SFÂRȘIT BLOC GRAFFITI (CORECTAT FINAL) ===================
+
+// PASUL 3: Creăm mesh-ul pentru spatele panoului.
+// Folosim aceeași geometrie, dar îl poziționăm foarte puțin în spate (pe axa Z)
+// pentru a evita ca suprafețele să "pâlpâie" (un efect numit Z-fighting).
+const backPanel = new THREE.Mesh(welcomePanelGeometry, backPanelMaterial);
+backPanel.position.y = 1.5; // Aceeași înălțime ca panoul frontal
+backPanel.position.z = -0.01; // Îl plasăm imediat în spatele panoului cu text
+backPanel.receiveShadow = true; // Spatele panoului poate primi umbre
+
+// PASUL 4: Adăugăm AMBELE panouri la grup.
+welcomePanelGroup.add(welcomePanel); // Adaugă panoul cu text (fața)
+welcomePanelGroup.add(backPanel);   // Adaugă panoul roșu (spatele)
+
+// =================== SFÂRȘIT BLOC MODIFICAT ===================
 const barHeight = 8; const barRadius = 0.15;
 const barGeometry = new THREE.CylinderGeometry(barRadius, barRadius, barHeight, 16);
 const barMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
@@ -398,15 +510,26 @@ function animate() {
             playerVelocity.z -= playerVelocity.z * 10.0 * deltaTime;
             playerVelocity.y += gravity * deltaTime;
 
-            const direction = new THREE.Vector3();
-            direction.z = Number(keysPressed['KeyW']) - Number(keysPressed['KeyS']);
-            direction.x = Number(keysPressed['KeyD']) - Number(keysPressed['KeyA']);
+// =================== ÎNCEPUT BLOC DE MIȘCARE CORECTAT ===================
 
-            if (direction.lengthSq() > 0) {
-                direction.normalize();
-                if (keysPressed['KeyW'] || keysPressed['KeyS']) playerVelocity.z -= direction.z * 400.0 * deltaTime;
-                if (keysPressed['KeyD'] || keysPressed['KeyA']) playerVelocity.x -= direction.x * 400.0 * deltaTime;
-            }
+const direction = new THREE.Vector3();
+// Aici este corectura: am inversat S și W pentru a potrivi direcția corectă
+direction.z = Number(keysPressed['KeyS']) - Number(keysPressed['KeyW']);
+direction.x = Number(keysPressed['KeyA']) - Number(keysPressed['KeyD']);
+
+// Verificăm dacă există vreo intenție de mișcare
+if (direction.lengthSq() > 0) {
+    // Normalizăm vectorul pentru a avea o viteză constantă indiferent dacă mergem drept sau pe diagonală
+    direction.normalize();
+
+    const speed = 400.0;
+    
+    // Aplicăm viteza direct, bazat pe vectorul de direcție normalizat.
+    playerVelocity.x += direction.x * speed * deltaTime;
+    playerVelocity.z += direction.z * speed * deltaTime;
+}
+
+// =================== SFÂRȘIT BLOC DE MIȘCARE CORECTAT ===================
 
             controls.moveRight(-playerVelocity.x * deltaTime);
             controls.moveForward(-playerVelocity.z * deltaTime);
