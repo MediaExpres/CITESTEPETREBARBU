@@ -95,7 +95,10 @@ scene.add(directionalLight);
 const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.1, roughness: 0.8 });
 
 if (isMobile) {
+    // Eliminăm instrucțiunile de desktop, dacă există
     document.getElementById('instructions-desktop')?.remove();
+
+    // Setăm poziția camerei și controalele pentru mobil
     camera.position.set(25, 10, 60);
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -103,8 +106,35 @@ if (isMobile) {
     controls.screenSpacePanning = false;
     controls.maxPolarAngle = Math.PI / 2.1;
     controls.target.set(0, 5, 0);
+
+    // #############################################
+    // ## NOU: LOGICA PENTRU PORNIREA SUNETULUI PE MOBIL ##
+    // #############################################
+
+    // 1. Găsim elementul HTML pe care l-am creat
+    const instructionsMobile = document.getElementById('instructions-mobile');
+
+    // 2. Adăugăm un event listener pentru primul click/tap
+    // Folosim { once: true } pentru ca acest listener să se execute o singură dată și apoi să se auto-elimine.
+    instructionsMobile.addEventListener('click', () => {
+        // 3. Reluăm contextul audio (obligatoriu pe mobil)
+        if (listener.context.state === 'suspended') {
+            listener.context.resume();
+        }
+
+        // 4. Pornim sunetul dacă nu este deja pornit
+        if (!sound.isPlaying) {
+            sound.play();
+        }
+
+        // 5. Ascundem ecranul de pornire pentru a afișa scena 3D
+        instructionsMobile.style.display = 'none';
+
+    }, { once: true });
+
 } else {
-    document.getElementById('instructions-mobile')?.remove();
+    // Logica ta existentă pentru desktop
+    document.getElementById('instructions-mobile')?.remove(); // Ascundem div-ul de mobil pe desktop
     controls = new PointerLockControls(camera, document.body);
     const instructions = document.createElement('div');
     instructions.id = 'instructions-desktop';
@@ -119,15 +149,13 @@ if (isMobile) {
     controls.addEventListener('lock', () => {
         instructions.style.display = 'none';
         
-        // =================== MODIFICARE: ACTIVARE AUDIO LA CLICK ===================
-        // Pornim contextul audio și redarea sunetului la primul click
+        // Activare audio la click pe desktop
         if (listener.context.state === 'suspended') {
             listener.context.resume();
         }
         if (!sound.isPlaying) {
-            sound.play(); // Pornim sunetul, care are deja volumul setat la minim
+            sound.play();
         }
-        // =================== SFÂRȘIT MODIFICARE ===================
     });
 
     controls.addEventListener('unlock', () => {
