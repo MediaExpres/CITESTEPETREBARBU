@@ -133,6 +133,7 @@ if (isMobile) {
     controls.addEventListener('unlock', () => { instructions.style.display = ''; });
     controls.object.position.set(25, 5, 45);
     scene.add(controls.object);
+
     document.addEventListener('keydown', (event) => { keysPressed[event.code] = true; });
     document.addEventListener('keyup', (event) => { keysPressed[event.code] = false; });
 }
@@ -153,11 +154,9 @@ ground.receiveShadow = true;
 scene.add(ground);
 
 
-// ### MODIFICARE: Funcția pentru stâlpi de iluminat, acum cu glob și intensitate redusă ###
 function createHighMastLight(x, z) {
     const lightGroup = new THREE.Group();
 
-    // Stâlpul înalt de 15m
     const postGeometry = new THREE.CylinderGeometry(0.2, 0.2, 15, 12);
     const postMaterial = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });
     const post = new THREE.Mesh(postGeometry, postMaterial);
@@ -165,22 +164,13 @@ function createHighMastLight(x, z) {
     post.castShadow = true;
     lightGroup.add(post);
 
-    // Globul luminos din vârf
     const bulbGeometry = new THREE.SphereGeometry(0.9, 16, 8);
-    const bulbMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Material simplu alb, ca un bec
+    const bulbMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const bulb = new THREE.Mesh(bulbGeometry, bulbMaterial);
-    bulb.position.y = 15; // Poziționat exact în vârful stâlpului
+    bulb.position.y = 15;
     lightGroup.add(bulb);
 
-    // Spotul propriu-zis, cu intensitate redusă
-    const spotLight = new THREE.SpotLight(
-        0xFFEBCD,
-        8000,       // Intensitate redusă pentru un efect mai subtil
-        80,
-        Math.PI / 4,
-        0.2,
-        1.5
-    );
+    const spotLight = new THREE.SpotLight(0xFFEBCD, 8000, 80, Math.PI / 4, 0.2, 1.5);
     spotLight.position.set(0, 15, 0);
     spotLight.castShadow = true;
     lightGroup.add(spotLight);
@@ -212,6 +202,8 @@ for (let i = 0; i < numPillars; i++) {
     pillarGroup.add(backPillar);
 }
 scene.add(pillarGroup);
+
+
 const mainStructure = new THREE.Group();
 const floorHeight = 7;
 const numFloors = 1;
@@ -274,6 +266,7 @@ for (let i = 0; i < numFloors; i++) {
     mainStructure.add(createFloor(i));
 }
 scene.add(mainStructure);
+
 const slabWidth = pillarSpacing * numPillars;
 const wallHeight = 5 + (numFloors * floorHeight);
 const wallDepth = 35;
@@ -285,13 +278,13 @@ leftWall.position.set(-slabWidth / 2, wallHeight / 2, 0);
 leftWall.castShadow = true;
 leftWall.receiveShadow = true;
 scene.add(leftWall);
+
 const rightWall = new THREE.Mesh(wallGeometry, brickMaterial);
 rightWall.position.set(slabWidth / 2, wallHeight / 2, 0);
 rightWall.castShadow = true;
 rightWall.receiveShadow = true;
 scene.add(rightWall);
 
-// ### MODIFICARE: Am păstrat doar cei 2 stâlpi din față ###
 const cornerX = slabWidth / 2 + 5;
 const cornerZ = wallDepth / 2 + 5;
 createHighMastLight(cornerX, cornerZ);
@@ -330,6 +323,7 @@ const bannerGeometry = new THREE.PlaneGeometry(bannerWidth, bannerHeight);
 const banner = new THREE.Mesh(bannerGeometry, bannerMaterial);
 banner.position.set(0, bannerCenterY, 17.6);
 scene.add(banner);
+
 const roofWidth = pillarSpacing * numPillars;
 const roofDepth = 35;
 const roofThickness = 1;
@@ -352,6 +346,7 @@ roofMesh.rotation.x = -Math.PI / 2;
 roofMesh.receiveShadow = true;
 roofMesh.castShadow = true;
 scene.add(roofMesh);
+
 const domeSegments = 25; const domeRings = 6;
 const domeGroup = new THREE.Group();
 const domeColor = 'blue'; const tubeRadius = 0.25;
@@ -398,6 +393,7 @@ for (let i = 0; i < domeSegments; i++) {
 }
 domeGroup.position.y = 10.5;
 scene.add(domeGroup);
+
 const welcomePanelGroup = new THREE.Group();
 const welcomeCanvas = document.createElement('canvas');
 const welcomeContext = welcomeCanvas.getContext('2d');
@@ -485,6 +481,7 @@ const backPanel = new THREE.Mesh(welcomePanelGeometry, backPanelMaterial);
 backPanel.position.y = 1.5;
 backPanel.position.z = -0.01;
 backPanel.receiveShadow = true;
+backPanel.castShadow = true;
 
 welcomePanelGroup.add(welcomePanel);
 welcomePanelGroup.add(backPanel);
@@ -502,6 +499,8 @@ rightBar.castShadow = true;
 welcomePanelGroup.add(rightBar);
 welcomePanelGroup.position.set(29, 5, 33);
 scene.add(welcomePanelGroup);
+
+
 const playerCollider = new THREE.Box3();
 const playerSize = new THREE.Vector3(1, 5, 1);
 const leftWallCollider = new THREE.Box3().setFromObject(leftWall);
