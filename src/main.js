@@ -72,10 +72,10 @@ let keysPressed = {
     'KeyW': false, 'KeyA': false, 'KeyS': false, 'KeyD': false, 'Space': false
 };
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 directionalLight.position.set(50, 50, 25);
 directionalLight.castShadow = true;
 directionalLight.shadow.camera.top = 50;
@@ -86,11 +86,10 @@ scene.add(directionalLight);
 
 const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.1, roughness: 0.8 });
 
-// ### MODIFICARE: AM CREAT UN MATERIAL SIMPLU PENTRU ASFALT LUCIOS ###
 const polishedAsphaltMaterial = new THREE.MeshStandardMaterial({
-    color: 0x222222, // O culoare de asfalt foarte închisă
-    roughness: 0.2,  // Valoare mică pentru un efect foarte lucios
-    metalness: 0.1   // Puțin metalness pentru a capta reflexiile
+    color: 0x222222,
+    roughness: 0.2,
+    metalness: 0.1
 });
 
 
@@ -147,12 +146,54 @@ window.addEventListener('resize', () => {
 // ## 4. BUILDING COMPONENTS ##
 const groundGeometry = new THREE.PlaneGeometry(200, 200);
 
-// ### MODIFICARE: AM APLICAT NOUL MATERIAL DE ASFALT PE SOL ###
 const ground = new THREE.Mesh(groundGeometry, polishedAsphaltMaterial);
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.05;
 ground.receiveShadow = true;
 scene.add(ground);
+
+
+// ### MODIFICARE: Funcția pentru stâlpi de iluminat, acum cu glob și intensitate redusă ###
+function createHighMastLight(x, z) {
+    const lightGroup = new THREE.Group();
+
+    // Stâlpul înalt de 15m
+    const postGeometry = new THREE.CylinderGeometry(0.2, 0.2, 15, 12);
+    const postMaterial = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });
+    const post = new THREE.Mesh(postGeometry, postMaterial);
+    post.position.y = 7.5;
+    post.castShadow = true;
+    lightGroup.add(post);
+
+    // Globul luminos din vârf
+    const bulbGeometry = new THREE.SphereGeometry(0.9, 16, 8);
+    const bulbMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Material simplu alb, ca un bec
+    const bulb = new THREE.Mesh(bulbGeometry, bulbMaterial);
+    bulb.position.y = 15; // Poziționat exact în vârful stâlpului
+    lightGroup.add(bulb);
+
+    // Spotul propriu-zis, cu intensitate redusă
+    const spotLight = new THREE.SpotLight(
+        0xFFEBCD,
+        8000,       // Intensitate redusă pentru un efect mai subtil
+        80,
+        Math.PI / 4,
+        0.2,
+        1.5
+    );
+    spotLight.position.set(0, 15, 0);
+    spotLight.castShadow = true;
+    lightGroup.add(spotLight);
+    
+    lightGroup.position.set(x, 0, z);
+    scene.add(lightGroup);
+
+    const targetObject = new THREE.Object3D();
+    targetObject.position.set(0, 8, 0);
+    scene.add(targetObject);
+    spotLight.target = targetObject;
+}
+
 
 const pillarGroup = new THREE.Group();
 const pillarGeometry = new THREE.BoxGeometry(1, 6, 1);
@@ -249,6 +290,14 @@ rightWall.position.set(slabWidth / 2, wallHeight / 2, 0);
 rightWall.castShadow = true;
 rightWall.receiveShadow = true;
 scene.add(rightWall);
+
+// ### MODIFICARE: Am păstrat doar cei 2 stâlpi din față ###
+const cornerX = slabWidth / 2 + 5;
+const cornerZ = wallDepth / 2 + 5;
+createHighMastLight(cornerX, cornerZ);
+createHighMastLight(-cornerX, cornerZ);
+
+
 const canvas = document.createElement('canvas');
 const context = canvas.getContext('2d');
 canvas.width = 412; canvas.height = 86;
