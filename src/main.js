@@ -1,7 +1,7 @@
 import './style.css';
 import * as THREE from 'three';
 // Se importa AMBELE tipuri de controale
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js'; 
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // #############################################
@@ -52,32 +52,24 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 // ## 2. AUDIO, CONTROLS, LIGHTING & RESPONSIVENESS ##
 // #############################################
 
-// =================== MODIFICARE: SETUP AUDIO PENTRU VOLUM GRADUAL ===================
 const listener = new THREE.AudioListener();
-camera.add(listener); // Atașăm "urechea" de cameră
+camera.add(listener);
 const sound = new THREE.Audio(listener);
 const audioLoader = new THREE.AudioLoader();
 
-// Definim constantele pentru volum și distanța de fade
-const MIN_VOLUME = 0.1; // Volumul minim, auzit de la distanță
-const MAX_VOLUME = 1.0; // Volumul maxim, în interiorul clădirii
-const FADE_DISTANCE = 25.0; // Distanța pe care se face tranziția de volum
+const MIN_VOLUME = 0.1;
+const MAX_VOLUME = 1.0;
+const FADE_DISTANCE = 25.0;
 
-// Încarcă fișierul audio
-audioLoader.load('muzica.mp3', function(buffer) { // Asigură-te că ai un fișier 'muzica.mp3'
+audioLoader.load('muzica.mp3', function (buffer) {
     sound.setBuffer(buffer);
     sound.setLoop(true);
-    sound.setVolume(MIN_VOLUME); // Inițial, sunetul este setat la volumul minim
+    sound.setVolume(MIN_VOLUME);
 });
-// =================== SFÂRȘIT MODIFICARE ===================
 
 let controls;
 let keysPressed = {
-  'KeyW': false,
-  'KeyA': false,
-  'KeyS': false,
-  'KeyD': false,
-  'Space': false
+    'KeyW': false, 'KeyA': false, 'KeyS': false, 'KeyD': false, 'Space': false
 };
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -94,11 +86,16 @@ scene.add(directionalLight);
 
 const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.1, roughness: 0.8 });
 
-if (isMobile) {
-    // Eliminăm instrucțiunile de desktop, dacă există
-    document.getElementById('instructions-desktop')?.remove();
+// ### MODIFICARE: AM CREAT UN MATERIAL SIMPLU PENTRU ASFALT LUCIOS ###
+const polishedAsphaltMaterial = new THREE.MeshStandardMaterial({
+    color: 0x222222, // O culoare de asfalt foarte închisă
+    roughness: 0.2,  // Valoare mică pentru un efect foarte lucios
+    metalness: 0.1   // Puțin metalness pentru a capta reflexiile
+});
 
-    // Setăm poziția camerei și controalele pentru mobil
+
+if (isMobile) {
+    document.getElementById('instructions-desktop')?.remove();
     camera.position.set(25, 10, 60);
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -106,50 +103,27 @@ if (isMobile) {
     controls.screenSpacePanning = false;
     controls.maxPolarAngle = Math.PI / 2.1;
     controls.target.set(0, 5, 0);
-
-    // #############################################
-    // ## NOU: LOGICA PENTRU PORNIREA SUNETULUI PE MOBIL ##
-    // #############################################
-
-    // 1. Găsim elementul HTML pe care l-am creat
     const instructionsMobile = document.getElementById('instructions-mobile');
-
-    // 2. Adăugăm un event listener pentru primul click/tap
-    // Folosim { once: true } pentru ca acest listener să se execute o singură dată și apoi să se auto-elimine.
     instructionsMobile.addEventListener('click', () => {
-        // 3. Reluăm contextul audio (obligatoriu pe mobil)
         if (listener.context.state === 'suspended') {
             listener.context.resume();
         }
-
-        // 4. Pornim sunetul dacă nu este deja pornit
         if (!sound.isPlaying) {
             sound.play();
         }
-
-        // 5. Ascundem ecranul de pornire pentru a afișa scena 3D
         instructionsMobile.style.display = 'none';
-
     }, { once: true });
-
 } else {
-    // Logica ta existentă pentru desktop
-    document.getElementById('instructions-mobile')?.remove(); // Ascundem div-ul de mobil pe desktop
+    document.getElementById('instructions-mobile')?.remove();
     controls = new PointerLockControls(camera, document.body);
     const instructions = document.createElement('div');
     instructions.id = 'instructions-desktop';
     instructions.innerHTML = 'Click pentru a începe<br>(W, A, S, D = Mișcare, MOUSE = Privire, SPACE = Săritură)';
     instructions.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:24px; text-align:center; background:rgba(0,0,0,0.5); padding:20px; border-radius:10px; cursor:pointer;';
     document.body.appendChild(instructions);
-
-    instructions.addEventListener('click', () => {
-        controls.lock();
-    });
-
+    instructions.addEventListener('click', () => { controls.lock(); });
     controls.addEventListener('lock', () => {
         instructions.style.display = 'none';
-        
-        // Activare audio la click pe desktop
         if (listener.context.state === 'suspended') {
             listener.context.resume();
         }
@@ -157,14 +131,9 @@ if (isMobile) {
             sound.play();
         }
     });
-
-    controls.addEventListener('unlock', () => {
-        instructions.style.display = '';
-    });
-
+    controls.addEventListener('unlock', () => { instructions.style.display = ''; });
     controls.object.position.set(25, 5, 45);
     scene.add(controls.object);
-
     document.addEventListener('keydown', (event) => { keysPressed[event.code] = true; });
     document.addEventListener('keyup', (event) => { keysPressed[event.code] = false; });
 }
@@ -177,11 +146,14 @@ window.addEventListener('resize', () => {
 
 // ## 4. BUILDING COMPONENTS ##
 const groundGeometry = new THREE.PlaneGeometry(200, 200);
-const ground = new THREE.Mesh(groundGeometry, concreteMaterial);
+
+// ### MODIFICARE: AM APLICAT NOUL MATERIAL DE ASFALT PE SOL ###
+const ground = new THREE.Mesh(groundGeometry, polishedAsphaltMaterial);
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.05;
 ground.receiveShadow = true;
 scene.add(ground);
+
 const pillarGroup = new THREE.Group();
 const pillarGeometry = new THREE.BoxGeometry(1, 6, 1);
 const numPillars = 14;
@@ -486,12 +458,10 @@ const playerSize = new THREE.Vector3(1, 5, 1);
 const leftWallCollider = new THREE.Box3().setFromObject(leftWall);
 const rightWallCollider = new THREE.Box3().setFromObject(rightWall);
 
-// =================== MODIFICARE: ZONA DE VOLUM MAXIM ===================
 const maxVolumeZone = new THREE.Box3(
     new THREE.Vector3(-slabWidth / 2, -10, -wallDepth / 2),
     new THREE.Vector3(slabWidth / 2, 50, wallDepth / 2)
 );
-// =================== SFÂRȘIT MODIFICARE ===================
 
 renderer.compile(scene, camera);
 const playerVelocity = new THREE.Vector3();
@@ -524,28 +494,22 @@ function animate() {
                 playerVelocity.z += direction.z * speed * deltaTime;
             }
 
-            // Aplicăm mișcarea pe orizontală
             controls.moveRight(-playerVelocity.x * deltaTime);
             controls.moveForward(-playerVelocity.z * deltaTime);
-            
-            // Aplicăm mișcarea pe verticală (săritura)
+
             controls.object.position.y += playerVelocity.y * deltaTime;
 
             const playerPos = controls.object.position;
             playerCollider.setFromCenterAndSize(playerPos, playerSize);
 
-            // Verificăm coliziunile cu pereții laterali
             const colliders = [leftWallCollider, rightWallCollider];
             for (const collider of colliders) {
                 if (playerCollider.intersectsBox(collider)) {
-                    // Logica simplă de resetare a poziției pe axa X în caz de coliziune
-                    // Oprește mișcarea pe X pentru a nu rămâne blocat
-                    playerPos.x -= -playerVelocity.x * deltaTime; // Anulează mișcarea pe X
+                    playerPos.x -= -playerVelocity.x * deltaTime;
                     playerVelocity.x = 0;
                 }
             }
-            
-            // Verificăm coliziunea cu solul
+
             if (playerPos.y < 5) {
                 playerVelocity.y = 0;
                 playerPos.y = 5;
@@ -553,30 +517,22 @@ function animate() {
                     playerVelocity.y = jumpHeight;
                 }
             }
-            
-            // =================== MODIFICARE: LOGICA DE FADE AUDIO ===================
-            // Am eliminat vechea logică binară și am înlocuit-o cu cea nouă
+
             if (sound.isPlaying) {
                 let volume = MIN_VOLUME;
-                
-                // Calculăm cea mai scurtă distanță de la jucător la "cutia" de volum maxim
+
                 const distanceToZone = maxVolumeZone.distanceToPoint(playerPos);
-                
+
                 if (distanceToZone < FADE_DISTANCE) {
-                    // Jucătorul este în zona de tranziție sau în interior
-                    // Calculăm progresul (0.0 la marginea zonei de fade, 1.0 la marginea zonei de volum maxim)
                     const progress = 1.0 - (distanceToZone / FADE_DISTANCE);
-                    // Calculăm volumul prin interpolare liniară
                     volume = MIN_VOLUME + progress * (MAX_VOLUME - MIN_VOLUME);
                 }
-                
-                // Setăm volumul, asigurându-ne că nu depășește limitele
+
                 sound.setVolume(Math.max(MIN_VOLUME, Math.min(MAX_VOLUME, volume)));
             }
-            // =================== SFÂRȘIT MODIFICARE ===================
         }
     }
-    
+
     renderer.render(scene, camera);
 }
 
