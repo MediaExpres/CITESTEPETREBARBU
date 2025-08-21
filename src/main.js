@@ -72,10 +72,10 @@ let keysPressed = {
     'KeyW': false, 'KeyA': false, 'KeyS': false, 'KeyD': false, 'Space': false
 };
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+const ambientLight = new THREE.AmbientLight(0xadd8e6, 0.4);
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+const directionalLight = new THREE.DirectionalLight(0xadd8e6, 0.8);
 directionalLight.position.set(50, 50, 25);
 directionalLight.castShadow = true;
 directionalLight.shadow.camera.top = 50;
@@ -170,7 +170,7 @@ function createHighMastLight(x, z) {
     bulb.position.y = 15;
     lightGroup.add(bulb);
 
-    const spotLight = new THREE.SpotLight(0xFFEBCD, 8000, 80, Math.PI / 4, 0.2, 1.5);
+    const spotLight = new THREE.SpotLight(0xadd8e6, 8000, 80, Math.PI / 4, 0.2, 1.5);
     spotLight.position.set(0, 15, 0);
     spotLight.castShadow = true;
     lightGroup.add(spotLight);
